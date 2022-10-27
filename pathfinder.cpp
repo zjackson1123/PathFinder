@@ -9,12 +9,16 @@ std::pair<int, int> cursor;
 Grid grid;
 RBTree bstX;
 RBTree bstY;
+int bClicked = -1;
+bool gridDrawing = false;
 LRESULT CALLBACK WindowProcessMessages(HWND hwnd, UINT msg, WPARAM param, LPARAM lparam);
 bool createWindow();
 void drawUI(HDC hdc);
-void clickDownhandler(std::pair<int, int>* inItem, RBTree* bstX, RBTree* bstY, Grid* grid);
-void clickUphandler(std::pair<int, int>* inItem, Grid* grid);
-int successfulClick(std::pair<int, int>* inItem, Grid* grid, POINT* cursor);
+void clickDownhandler(POINT* dmP, int* bClicked);
+void clickUphandler(POINT* umP, int* bClicked, bool* gridDrawing);
+void gridClickDownhandler(POINT* dmP);
+void gridClickUphandler(POINT* umP);
+int successfulClick(Grid* grid, HWND hWnd, int* bClicked);
 void FindShortestPath();
 
 
@@ -70,10 +74,23 @@ LRESULT CALLBACK WindowProcessMessages(HWND hWnd, UINT msg, WPARAM param, LPARAM
             EndPaint(hWnd, &ps);
             return 0;
         case WM_LBUTTONDOWN:
-            clickDownhandler(&inItem, &bstX, &bstY, &grid);
+            POINT dmP;
+            GetCursorPos(&dmP);
+            if(gridDrawing) {  
+                grid.gridClickDownHandler(&dmP);
+                return 0;
+            }
+            clickDownhandler(&dmP, &bClicked);
             return 0;
         case WM_LBUTTONUP:
-            clickUphandler(&inItem, &grid);
+            POINT umP;
+            GetCursorPos(&umP);
+            if(gridDrawing && grid.gridClickUphandler(&umP)) {
+                successfulClick(&grid, hWnd, &bClicked);
+                gridDrawing = false;
+                return 0;
+            }
+            clickUphandler(&umP, &bClicked, &gridDrawing);
             return 0;
         case WM_DESTROY:
             PostQuitMessage(0);
@@ -90,47 +107,56 @@ void drawUI(HDC hdc) {
     Gdiplus::Font font(&fontfam, 8, Gdiplus::FontStyleBold, Gdiplus::UnitPoint);
     Gdiplus::Pen pen(Gdiplus::Color(114,137,218));
     Gdiplus::SolidBrush sBrush(Gdiplus::Color(114,137,218));
-    grid = Grid(rect, &gf, &pen, &bstX, &bstY);
+    grid = Grid(rect, &gf, &pen);
     std::string spb = "Shortest Path Button";
     std::string ssp = "Set Start Point";
     Button findPathbtn(&gf, 20, 20, 120, 20, &spb, &font, Buttons);
     Button setStartbtn(&gf, 160, 20, 120, 20, &ssp, &font, Buttons);
+
 }
 
-void clickDownhandler(std::pair<int, int>* inItem, RBTree* bstX, RBTree* bstY, Grid* grid) {
-    POINT dmP;
-    GetCursorPos(&dmP);
-    ScreenToClient(hWnd, &dmP);
-    if(dmP.y > 200) {
+void clickDownhandler(POINT* dmP, int* bClicked) {
+    if(dmP->y < 200) {
         for(int i = 0; i < 3; i++){
-            if(dmP.x > Buttons[i][0] && dmP.x < Buttons[i][3]
-            && dmP.y > Buttons[i][1] && dmP.y < Buttons[i][3]) {
-
+            if(dmP->x > Buttons[i][0] && dmP->x < Buttons[i][2]
+            && dmP->y > Buttons[i][1] && dmP->y < Buttons[i][3]) {
+                *bClicked = i;
             }
         }
     }
-    inItem->first = bstX->searchTree(dmP.x, grid->dX);
-    inItem->second = bstY->searchTree(dmP.y, grid->dY);
+
 }
 
-void clickUphandler(std::pair<int, int>* inItem, Grid* grid) {
-    if(inItem->first == 0 || inItem->second == 0) return;
-    POINT umP;
-    GetCursorPos(&umP);
-    ScreenToClient(hWnd, &umP);
-    if(umP.x < inItem->first && umP.x + grid->dX > inItem->first 
-    && umP.y < inItem->second && umP.y + grid->dY > inItem->second) {
-        successfulClick(inItem, grid, &umP);
+void clickUphandler(POINT* umP, int* bClicked, bool* gridDrawing) {
+    if(*bClicked == -1) {
+        *gridDrawing = false;
+        return;
+    } 
+    if(umP->x > Buttons[*bClicked][0] && umP->x < Buttons[*bClicked][2]
+    && umP->y > Buttons[*bClicked][1] && umP->y < Buttons[*bClicked][3]) {
+        *gridDrawing = true;
         return;
     }
-    inItem->first = 0;
-    inItem->second = 0;
+    *bClicked = -1;
+    *gridDrawing = false;
+    return;
 }
 
-int successfulClick(std::pair<int, int>* inItem, Grid* grid, POINT* cursor) {
-    grid->setStart(inItem, hWnd);
-    inItem->first = 0;
-    inItem->second = 0;
+int successfulClick(Grid* grid, HWND hWnd, int* bClicked) {
+    switch(*bClicked) {
+        case 0:
+        FindShortestPath();
+        break;
+        case 1:
+        grid->setStart(hWnd);
+        break;
+        case 2:
+        grid->setGoal(hWnd);
+        break;
+        case 3:
+        grid->pathDraw();
+        break;
+    }   
     return 0;
 }
 

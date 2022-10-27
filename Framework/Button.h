@@ -3,12 +3,12 @@
 class Button {
     private:       
         void drawButton(Gdiplus::Graphics* gf, Button* btn, Gdiplus::Font* font, int Buttons[3][4]) {
-            for(int i = 0; i < 3; i++){
-                if(Buttons[i] == NULL){
+            for(int i = 0; i <= 3; i++){
+                if(Buttons[i][0] == 0){
                     Buttons[i][0] = (int)btn->btnRect.X;
                     Buttons[i][1] = (int)btn->btnRect.Y;
-                    Buttons[i][2] = (int)btn->btnRect.Width - btn->btnRect.X;
-                    Buttons[i][2] = (int)btn->btnRect.Height - btn->btnRect.Y;
+                    Buttons[i][2] = (int)btn->btnRect.Width + (int)btn->btnRect.X;
+                    Buttons[i][3] = (int)btn->btnRect.Height + (int)btn->btnRect.Y + 20;
                     break;
                 }
             }
