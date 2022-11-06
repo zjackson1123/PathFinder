@@ -2,16 +2,7 @@
 
 class Button {
     private:       
-        void drawButton(Gdiplus::Graphics* gf, Button* btn, Gdiplus::Font* font, int Buttons[3][4]) {
-            for(int i = 0; i <= 3; i++){
-                if(Buttons[i][0] == 0){
-                    Buttons[i][0] = (int)btn->btnRect.X;
-                    Buttons[i][1] = (int)btn->btnRect.Y;
-                    Buttons[i][2] = (int)btn->btnRect.Width + (int)btn->btnRect.X;
-                    Buttons[i][3] = (int)btn->btnRect.Height + (int)btn->btnRect.Y + 20;
-                    break;
-                }
-            }
+        void drawButton(Gdiplus::Graphics* gf, Button* btn, Gdiplus::Font* font) {
             Gdiplus::Pen pen(Gdiplus::Color(114,137,218));
             Gdiplus::SolidBrush sbrush(Gdiplus::Color(114,137,218));
             gf->DrawRectangle(&pen, btn->btnRect);
@@ -33,15 +24,36 @@ class Button {
         Gdiplus::RectF btnBorder;
         std::string btnText = "";
         Button(){}
-        Button(Gdiplus::Graphics* gf, int x, int y, int width, int height, Gdiplus::Font* font, int Buttons[3][4]){      
+        Button(Gdiplus::Graphics* gf, int x, int y, int width, int height, Gdiplus::Font* font){      
             btnRect = Gdiplus::RectF(x, y, width, height);
             btnBorder = Gdiplus::RectF(x + 2.5, y + 2.5, width - 5, height - 5);
-            drawButton(gf, this, font, Buttons);
+            drawButton(gf, this, font);
         }
-        Button(Gdiplus::Graphics* gf, int x, int y, int width, int height, std::string* text, Gdiplus::Font* font, int Buttons[3][4]){
+        Button(Gdiplus::Graphics* gf, int x, int y, int width, int height, std::string* text, Gdiplus::Font* font){
             btnRect = Gdiplus::RectF(x, y, width, height);
             btnBorder = Gdiplus::RectF(x + 2.5, y + 2.5, width - 5, height - 5);
             btnText = *text;
-            drawButton(gf, this, font, Buttons);
+            drawButton(gf, this, font);
         }       
+};
+
+class Buttons {
+    private:
+        int btnCount = 0;
+
+    public:
+        Button Buttons[4];
+        void addButton(Button button) {
+            Buttons[btnCount++] = button;
+        }
+
+        int checkButtons(POINT* mPos) {
+            for(int i = 0; i < 4; i++) {
+                if(mPos->x > Buttons[i].btnRect.X && mPos->x < (Buttons[i].btnRect.X + Buttons[i].btnRect.Width)
+                && mPos->y > Buttons[i].btnRect.Y && mPos->y < (Buttons[i].btnRect.Y + Buttons[i].btnRect.Height + 20)) {
+                    return i;
+                }
+            }
+            return -1;
+        }
 };

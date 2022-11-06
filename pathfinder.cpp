@@ -3,24 +3,14 @@
 HWND hWnd;
 HINSTANCE hInst;
 RECT rect;
-std::pair<int, int> inItem;
-int Buttons[3][4];
-std::pair<int, int> cursor;
+Buttons btnArr;
+mouseClick mClick;
 Grid grid;
 RBTree bstX;
 RBTree bstY;
-int bClicked = -1;
-bool gridDrawing = false;
 LRESULT CALLBACK WindowProcessMessages(HWND hwnd, UINT msg, WPARAM param, LPARAM lparam);
 bool createWindow();
 void drawUI(HDC hdc);
-void clickDownhandler(POINT* dmP, int* bClicked);
-void clickUphandler(POINT* umP, int* bClicked, bool* gridDrawing);
-void gridClickDownhandler(POINT* dmP);
-void gridClickUphandler(POINT* umP);
-int successfulClick(Grid* grid, HWND hWnd, int* bClicked);
-void FindShortestPath();
-
 
 int WINAPI WinMain(HINSTANCE currentInstance, HINSTANCE previousInstance, PSTR cmdLine, INT cmdCount) {
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
@@ -54,14 +44,13 @@ bool createWindow(){
     windowClass.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(66,69,73));
     windowClass.lpszMenuName = NULL;
     windowClass.lpszClassName = _T("TestClass");
-
     RegisterClassEx(&windowClass);
-
     hWnd = CreateWindowEx(dwExStyle, _T("TestClass"), _T("TestClass"), WS_OVERLAPPEDWINDOW, 
     CW_USEDEFAULT, 0, 1200, 1000, NULL, NULL, hInst, NULL);
     ShowWindow(hWnd, SW_SHOWMAXIMIZED);
     UpdateWindow(hWnd);
     return true;
+
 }
 
 LRESULT CALLBACK WindowProcessMessages(HWND hWnd, UINT msg, WPARAM param, LPARAM lparam) {
@@ -74,23 +63,11 @@ LRESULT CALLBACK WindowProcessMessages(HWND hWnd, UINT msg, WPARAM param, LPARAM
             EndPaint(hWnd, &ps);
             return 0;
         case WM_LBUTTONDOWN:
-            POINT dmP;
-            GetCursorPos(&dmP);
-            if(gridDrawing) {  
-                grid.gridClickDownHandler(&dmP);
-                return 0;
-            }
-            clickDownhandler(&dmP, &bClicked);
+            mClick.set_mDown();
             return 0;
         case WM_LBUTTONUP:
-            POINT umP;
-            GetCursorPos(&umP);
-            if(gridDrawing && grid.gridClickUphandler(&umP)) {
-                successfulClick(&grid, hWnd, &bClicked);
-                gridDrawing = false;
-                return 0;
-            }
-            clickUphandler(&umP, &bClicked, &gridDrawing);
+            mClick.set_mUp();
+            mClick.checkClick(&btnArr, &grid, hWnd);
             return 0;
         case WM_DESTROY:
             PostQuitMessage(0);
@@ -108,58 +85,13 @@ void drawUI(HDC hdc) {
     Gdiplus::Pen pen(Gdiplus::Color(114,137,218));
     Gdiplus::SolidBrush sBrush(Gdiplus::Color(114,137,218));
     grid = Grid(rect, &gf, &pen);
-    std::string spb = "Shortest Path Button";
+    std::string spb = "Find Shortest Path";
     std::string ssp = "Set Start Point";
-    Button findPathbtn(&gf, 20, 20, 120, 20, &spb, &font, Buttons);
-    Button setStartbtn(&gf, 160, 20, 120, 20, &ssp, &font, Buttons);
+    std::string sgb = "Set Goal";
+    std::string dpb = "Draw Path";
+    btnArr.addButton(Button(&gf, 20, 20, 120, 20, &spb, &font));
+    btnArr.addButton(Button(&gf, 160, 20, 120, 20, &ssp, &font));
+    btnArr.addButton(Button(&gf, 300, 20, 120, 20, &sgb, &font));
+    btnArr.addButton(Button(&gf, 440, 20, 120, 20, &dpb, &font));
 
-}
-
-void clickDownhandler(POINT* dmP, int* bClicked) {
-    if(dmP->y < 200) {
-        for(int i = 0; i < 3; i++){
-            if(dmP->x > Buttons[i][0] && dmP->x < Buttons[i][2]
-            && dmP->y > Buttons[i][1] && dmP->y < Buttons[i][3]) {
-                *bClicked = i;
-            }
-        }
-    }
-
-}
-
-void clickUphandler(POINT* umP, int* bClicked, bool* gridDrawing) {
-    if(*bClicked == -1) {
-        *gridDrawing = false;
-        return;
-    } 
-    if(umP->x > Buttons[*bClicked][0] && umP->x < Buttons[*bClicked][2]
-    && umP->y > Buttons[*bClicked][1] && umP->y < Buttons[*bClicked][3]) {
-        *gridDrawing = true;
-        return;
-    }
-    *bClicked = -1;
-    *gridDrawing = false;
-    return;
-}
-
-int successfulClick(Grid* grid, HWND hWnd, int* bClicked) {
-    switch(*bClicked) {
-        case 0:
-        FindShortestPath();
-        break;
-        case 1:
-        grid->setStart(hWnd);
-        break;
-        case 2:
-        grid->setGoal(hWnd);
-        break;
-        case 3:
-        grid->pathDraw();
-        break;
-    }   
-    return 0;
-}
-
-void FindShortestPath() {
-    std::cout << "fsp btn clicked" << std::endl;
 }

@@ -1,8 +1,29 @@
 #include "framework.h"
 
-//setup gridsquare for start, goal, and path, so that there are finite instances of them
+class GridSquare {
+    public:
+        bool Drawn;
+        int X;
+        int Y;
+        int Width;
+        int Height;
+        GridSquare(){
+            X = 0;
+            Y = 0;
+            Width = 0;
+            Height = 0;
+            Drawn = false;
+        };
+};
+
+
+
 
 class Grid {
+    private:
+        GridSquare Start;
+        GridSquare Goal; 
+        std::pair<int, int> gridDraw;
     public:
         int dX;
         int dY;
@@ -42,27 +63,60 @@ class Grid {
             }
         }
 
-        void gridClickDownHandler(POINT* dmP) {
-            Grid::gridClick.first = bstX.searchTree(dmP->x, Grid::dX);
-            Grid::gridClick.second = bstY.searchTree(dmP->y, Grid::dY);
-        }
-
-        bool gridClickUphandler(POINT* umP) {
-            if(Grid::gridClick.first == 0 || Grid::gridClick.second == 0) return false;;
-            if(umP->x < Grid::gridClick.first && umP->x + Grid::dX > Grid::gridClick.first 
-            && umP->y < Grid::gridClick.second && umP->y + Grid::dY > Grid::gridClick.second) {
+        bool legalClick(POINT* dmP, POINT* umP) {
+            int x = bstX.searchTree(umP->x, Grid::dX);
+            int y = bstY.searchTree(umP->y, Grid::dY);
+            if(bstX.searchTree(dmP->x, Grid::dX) == x
+            && bstY.searchTree(dmP->y, Grid::dY) == y) {    
+                Grid::gridClick.first = x;
+                Grid::gridClick.second = y;     
                 return true;
             }
             Grid::gridClick.first = 0;
-            Grid::gridClick.second = 0;
+            Grid::gridClick.second = 0;  
             return false;
+        }
+
+        void tryDraw(HWND hWnd, POINT* dmP, POINT* umP) {
+            int x1 = bstX.searchTree(umP->x, dX);
+            int y1 = bstY.searchTree(umP->y, dY);
+            int x2 = bstX.searchTree(dmP->x, dX);
+            int y2 = bstY.searchTree(dmP->y, dY);
+            HDC hdc = GetDC(hWnd);
+            Gdiplus::Graphics gf(hdc);
+            Gdiplus::SolidBrush sBrush(Gdiplus::Color(255, 255, 255));
+            if(x1 == x2) {
+                int i = y1 > y2 ? y2 - (2*dY - 1) : y1 - (2*dY - 1);
+                int j = y1 < y2 ? y2 - (2*dY - 1) : y1- (2*dY - 1);
+                for(i; i <= j; i += dY) {
+                    gf.FillRectangle(&sBrush, x1 - (dX - 1), i, dX - 1, dY - 1);
+                }   
+            }
+            else if (y1 == y2) {
+                int i = x1 > x2 ? x2 - (dX - 1): x1 - (dX - 1);
+                int j = x1 < x2 ? x2 - (dX - 1): x1 - (dX - 1);
+                for(i; i <= j; i += dX) {
+                    gf.FillRectangle(&sBrush, i, y1 - (2*dY - 1), dX - 1, dY - 1);
+                }
+            }
+            ReleaseDC(hWnd, hdc);
         }
 
         void setStart(HWND hWnd) {          
             HDC hdc = GetDC(hWnd);
             Gdiplus::Graphics gf(hdc);
             Gdiplus::SolidBrush sBrush(Gdiplus::Color(80, 200, 120));
-            gf.FillRectangle(&sBrush, Grid::gridClick.first - (dX - 1), Grid::gridClick.second - (dY - 1), dX - 1, dY - 1);
+            Gdiplus::SolidBrush brBrush(Gdiplus::Color(66,69,73));
+            gf.FillRectangle(&sBrush, Grid::gridClick.first - (dX - 1), Grid::gridClick.second - (2*dY - 1), dX - 1, dY - 1);
+            if(Start.Drawn == true) {
+                gf.FillRectangle(&brBrush, Start.X, Start.Y, Start.Width, Start.Height);            
+            }
+
+            Start.Drawn = true;
+            Start.X = gridClick.first - (dX - 1);
+            Start.Y = gridClick.second - (2*dY - 1);
+            Start.Width = dX - 1;
+            Start.Height = dY - 1;                    
             ReleaseDC(hWnd, hdc);
         }
 
@@ -70,12 +124,18 @@ class Grid {
             HDC hdc = GetDC(hWnd);
             Gdiplus::Graphics gf(hdc);
             Gdiplus::SolidBrush sBrush(Gdiplus::Color(204, 0, 0));
-            gf.FillRectangle(&sBrush, gridClick.first - (dX - 1), gridClick.second - (dY - 1), dX - 1, dY - 1);
+            Gdiplus::SolidBrush brBrush(Gdiplus::Color(66,69,73));
+            gf.FillRectangle(&sBrush, gridClick.first - (dX - 1), gridClick.second - (2*dY - 1), dX - 1, dY - 1);
+            if(Goal.Drawn) {
+                gf.FillRectangle(&brBrush, Goal.X, Goal.Y, Goal.Width, Goal.Height);
+            }
+       
+            Goal.Drawn = true;
+            Goal.X = gridClick.first - (dX - 1);
+            Goal.Y = gridClick.second - (2*dY - 1);
+            Goal.Width = dX - 1;
+            Goal.Height = dY - 1;            
             ReleaseDC(hWnd, hdc);
-        }
-
-        void pathDraw() {
-
         }
 };
 
