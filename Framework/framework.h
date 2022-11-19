@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <thread>
 #include <vector>
+#include <windef.h>
 
 #include "rbTree.h"
 #include "Button.h"

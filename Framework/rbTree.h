@@ -20,16 +20,19 @@ class RBTree {
                  return 0;
             }
             if(node->val < key){
-                if(node->right == nullNode) {
+                if(node->right != nullNode) return search(node->right, key, delta_v);
+                if(node->val - key <= delta_v) {
                     return node->val + delta_v;
-                }
-                return search(node->right, key, delta_v);
+                }         
             }
             if(node->val > key) {
-                if(node->left == nullNode) {
+                if(node->left != nullNode) return search(node->left, key, delta_v);
+                if(node->val - key <= delta_v) {
                     return node->val;
                 }
-                return search(node->left, key, delta_v);
+            }
+            if(node->val == key) {
+                return node->val;
             }   
             return 0;
         }
@@ -168,4 +171,3 @@ class RBTree {
         }
 
 };
-

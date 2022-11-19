@@ -2,11 +2,10 @@
 
 class mouseClick {
     private:
-        bool cleanClick = true;
         bool sClick = false;
         bool gClick = false;
         bool pClick = false;
-
+        bool eClick = false;
     public:
         POINT umP;
         POINT dmP;
@@ -20,10 +19,11 @@ class mouseClick {
         }
 
         void checkClick(Buttons* btnArr, Grid* grid, HWND hWnd) {
-            if(cleanClick) {
-                int dI = btnArr->checkButtons(&dmP);
-                int uI = btnArr->checkButtons(&umP);
-                if(uI == dI) {
+            int dI = btnArr->checkButtons(&dmP);
+            int uI = btnArr->checkButtons(&umP);
+            if(uI != -1 && uI == dI) { 
+                Button btn = btnArr->Buttons[uI];
+                if(btn.btnActive){
                     switch(uI) {
                         case 0:
                         //find path
@@ -35,31 +35,52 @@ class mouseClick {
                         gClick = true;
                         break;
                         case 3:
-                        if(!pClick) pClick = true;
-                        else {
-                            pClick = false;
-                            cleanClick = true;
-                        } 
+                        pClick = true;
+                        eClick = false;
+                        btnArr->disableBtn(btn, hWnd);
+                        btnArr->enableBtn(btnArr->Buttons[uI + 1], hWnd);
+                        break;
+                        case 4:
+                        pClick = false;           
+                        btnArr->disableBtn(btn, hWnd);
+                        btnArr->enableBtn(btnArr->Buttons[uI - 1], hWnd);
+                        break;
+                        case 5:
+                        eClick = true;
+                        pClick = false;
+                        btnArr->disableBtn(btn, hWnd);
+                        btnArr->enableBtn(btnArr->Buttons[uI + 1], hWnd);
+                        break;
+                        case 6:
+                        eClick = false;
+                        btnArr->disableBtn(btn, hWnd);
+                        btnArr->enableBtn(btnArr->Buttons[uI -1], hWnd);
+                        break;
+                        case 7:
+                        RECT rect = {0, 200, grid->width + grid->dX, grid->height + 200};
+                        InvalidateRect(hWnd, &rect, true);
                         break;
                     }
-                    cleanClick = false;
                 }
-            }
-            else if(grid->legalClick(&dmP, &umP)) {
-                if(sClick){
-                    grid->setStart(hWnd);
-                    sClick = false;
-                }
-                if(gClick) {
-                    grid->setGoal(hWnd);
-                    gClick = false;
-                }
-                cleanClick = true;
-            }
-            else if(pClick) {
-                grid->tryDraw(hWnd, &dmP, &umP);
+                return;
             }
 
-            
+            if(sClick) {
+                grid->legalClick(&dmP, &umP, hWnd, "Start");
+                sClick = false;
+            }
+
+            if(gClick) {
+                grid->legalClick(&dmP, &umP, hWnd, "Goal");
+                gClick = false;
+            }
+
+            if(eClick) {
+                grid->legalClick(&dmP, &umP, hWnd, "Erase");
+            }
+
+            if(pClick) {
+                grid->legalClick(&dmP, &umP, hWnd);
+            }                
         }
 };

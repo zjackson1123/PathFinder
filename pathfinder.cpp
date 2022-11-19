@@ -43,9 +43,9 @@ bool createWindow(){
     windowClass.hCursor = LoadCursor(nullptr, IDC_ARROW);
     windowClass.hbrBackground = (HBRUSH)CreateSolidBrush(RGB(66,69,73));
     windowClass.lpszMenuName = NULL;
-    windowClass.lpszClassName = _T("TestClass");
+    windowClass.lpszClassName = _T("Path Finder");
     RegisterClassEx(&windowClass);
-    hWnd = CreateWindowEx(dwExStyle, _T("TestClass"), _T("TestClass"), WS_OVERLAPPEDWINDOW, 
+    hWnd = CreateWindowEx(dwExStyle, _T("Path Finder"), _T("Path Finder"), WS_OVERLAPPEDWINDOW, 
     CW_USEDEFAULT, 0, 1200, 1000, NULL, NULL, hInst, NULL);
     ShowWindow(hWnd, SW_SHOWMAXIMIZED);
     UpdateWindow(hWnd);
@@ -80,8 +80,6 @@ LRESULT CALLBACK WindowProcessMessages(HWND hWnd, UINT msg, WPARAM param, LPARAM
 void drawUI(HDC hdc) {
     Gdiplus::Graphics gf(hdc);  
     GetClientRect(hWnd, &rect);
-    Gdiplus::FontFamily fontfam(L"Arial");
-    Gdiplus::Font font(&fontfam, 8, Gdiplus::FontStyleBold, Gdiplus::UnitPoint);
     Gdiplus::Pen pen(Gdiplus::Color(114,137,218));
     Gdiplus::SolidBrush sBrush(Gdiplus::Color(114,137,218));
     grid = Grid(rect, &gf, &pen);
@@ -89,9 +87,17 @@ void drawUI(HDC hdc) {
     std::string ssp = "Set Start Point";
     std::string sgb = "Set Goal";
     std::string dpb = "Draw Path";
-    btnArr.addButton(Button(&gf, 20, 20, 120, 20, &spb, &font));
-    btnArr.addButton(Button(&gf, 160, 20, 120, 20, &ssp, &font));
-    btnArr.addButton(Button(&gf, 300, 20, 120, 20, &sgb, &font));
-    btnArr.addButton(Button(&gf, 440, 20, 120, 20, &dpb, &font));
-
+    std::string cgb = "Clear Grid";
+    std::string sdpb = "Stop Drawing";
+    std::string epb = "Erase Path";
+    std::string sepb = "Stop Erasing";
+    btnArr.addBtn(Button(&gf, 20, 20, 120, 20, &spb));
+    btnArr.addBtn(Button(&gf, 160, 20, 120, 20, &ssp));
+    btnArr.addBtn(Button(&gf, 300, 20, 120, 20, &sgb));
+    btnArr.addBtn(Button(&gf, 440, 20, 120, 20, &dpb));
+    btnArr.addBtn(Button(&gf, 440, 60, 120, 20, &sdpb, false));
+    btnArr.addBtn(Button(&gf, 580, 20, 120, 20, &epb));
+    btnArr.addBtn(Button(&gf, 580, 60, 120, 20, &sepb, false));
+    btnArr.addBtn(Button(&gf, 720, 20, 120, 20, &cgb));
+    
 }

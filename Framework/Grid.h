@@ -1,35 +1,25 @@
 #include "framework.h"
-
-class GridSquare {
-    public:
-        bool Drawn;
-        int X;
-        int Y;
-        int Width;
-        int Height;
-        GridSquare(){
-            X = 0;
-            Y = 0;
-            Width = 0;
-            Height = 0;
-            Drawn = false;
-        };
+struct GridSquare {
+    bool Drawn;
+    int X;
+    int Y;
+    GridSquare(){
+        X = 0;
+        Y = 0;
+        Drawn = false;
+    };
 };
-
-
-
 
 class Grid {
     private:
         GridSquare Start;
         GridSquare Goal; 
-        std::pair<int, int> gridDraw;
+
     public:
         int dX;
         int dY;
         int width;
         int height;
-        std::pair<int, int> gridClick;
         RBTree bstX;
         RBTree bstY;
         Grid(){}
@@ -46,7 +36,7 @@ class Grid {
             int bottom = top + dY;
             bool once = true;
             for(int j = 0; j < 50; j++) {
-                for(int i = 0; i < 30; i++) {           
+                for(int i = 0; i < 30; i++) {
                     if(right <= rect.right && bottom <= rect.bottom) {
                         gf->DrawRectangle(pen, left, top, dX, dY);
                         if(once) Grid::bstY.rbInsert(bottom); 
@@ -63,79 +53,68 @@ class Grid {
             }
         }
 
-        bool legalClick(POINT* dmP, POINT* umP) {
-            int x = bstX.searchTree(umP->x, Grid::dX);
-            int y = bstY.searchTree(umP->y, Grid::dY);
-            if(bstX.searchTree(dmP->x, Grid::dX) == x
-            && bstY.searchTree(dmP->y, Grid::dY) == y) {    
-                Grid::gridClick.first = x;
-                Grid::gridClick.second = y;     
-                return true;
-            }
-            Grid::gridClick.first = 0;
-            Grid::gridClick.second = 0;  
-            return false;
-        }
-
-        void tryDraw(HWND hWnd, POINT* dmP, POINT* umP) {
-            int x1 = bstX.searchTree(umP->x, dX);
-            int y1 = bstY.searchTree(umP->y, dY);
-            int x2 = bstX.searchTree(dmP->x, dX);
-            int y2 = bstY.searchTree(dmP->y, dY);
+        void legalClick(POINT* dmP, POINT* umP, HWND hWnd, const char* sqType = "") {
+            int x1 = bstX.searchTree(umP->x, Grid::dX);
+            int y1 = bstY.searchTree(umP->y, Grid::dY);
+            int x2 = bstX.searchTree(dmP->x, Grid::dX);
+            int y2 = bstY.searchTree(dmP->y, Grid::dY);
+            if(x1 == 0 || x2 == 0) return;    
             HDC hdc = GetDC(hWnd);
             Gdiplus::Graphics gf(hdc);
-            Gdiplus::SolidBrush sBrush(Gdiplus::Color(255, 255, 255));
-            if(x1 == x2) {
-                int i = y1 > y2 ? y2 - (2*dY - 1) : y1 - (2*dY - 1);
-                int j = y1 < y2 ? y2 - (2*dY - 1) : y1- (2*dY - 1);
-                for(i; i <= j; i += dY) {
-                    gf.FillRectangle(&sBrush, x1 - (dX - 1), i, dX - 1, dY - 1);
-                }   
+            
+            if(x1 == x2 && y1 == y2) {     
+                drawGsquare(&gf, x1, y1, sqType);
+                ReleaseDC(hWnd, hdc);
+                return;
             }
-            else if (y1 == y2) {
-                int i = x1 > x2 ? x2 - (dX - 1): x1 - (dX - 1);
-                int j = x1 < x2 ? x2 - (dX - 1): x1 - (dX - 1);
-                for(i; i <= j; i += dX) {
-                    gf.FillRectangle(&sBrush, i, y1 - (2*dY - 1), dX - 1, dY - 1);
+
+            while(x1 != x2 || y1 != y2) {
+                if(x2 > x1) {
+                    drawGsquare(&gf, x2, y2, sqType);
+                    x2 -= dX;
                 }
+                if(x1 > x2) {
+                    drawGsquare(&gf, x2, y2, sqType);
+                    x2 += dX;
+                }
+                if(y2 > y1) {
+                    drawGsquare(&gf, x2, y2, sqType);
+                    y2 -= dY;
+                }          
+                if(y1 > y2) {
+                    drawGsquare(&gf, x2, y2, sqType);
+                    y2 += dY;
+                } 
             }
+            drawGsquare(&gf, x1, y2, sqType);
             ReleaseDC(hWnd, hdc);
         }
 
-        void setStart(HWND hWnd) {          
-            HDC hdc = GetDC(hWnd);
-            Gdiplus::Graphics gf(hdc);
-            Gdiplus::SolidBrush sBrush(Gdiplus::Color(80, 200, 120));
-            Gdiplus::SolidBrush brBrush(Gdiplus::Color(66,69,73));
-            gf.FillRectangle(&sBrush, Grid::gridClick.first - (dX - 1), Grid::gridClick.second - (2*dY - 1), dX - 1, dY - 1);
-            if(Start.Drawn == true) {
-                gf.FillRectangle(&brBrush, Start.X, Start.Y, Start.Width, Start.Height);            
+        void drawGsquare(Gdiplus::Graphics* gf, int x, int y, const char* sqType) {
+            Gdiplus::SolidBrush sqBrush(Gdiplus::Color(255, 255, 255));
+            Gdiplus::SolidBrush bgBrush(Gdiplus::Color(66,69,73));
+            if(strcmp(sqType, "Erase") == 0) {
+                gf->FillRectangle(&bgBrush, x - (dX - 1), y - (2*dY - 1), dX - 1, dY - 1);
+                return;
             }
-
-            Start.Drawn = true;
-            Start.X = gridClick.first - (dX - 1);
-            Start.Y = gridClick.second - (2*dY - 1);
-            Start.Width = dX - 1;
-            Start.Height = dY - 1;                    
-            ReleaseDC(hWnd, hdc);
-        }
-
-        void setGoal(HWND hWnd) {
-            HDC hdc = GetDC(hWnd);
-            Gdiplus::Graphics gf(hdc);
-            Gdiplus::SolidBrush sBrush(Gdiplus::Color(204, 0, 0));
-            Gdiplus::SolidBrush brBrush(Gdiplus::Color(66,69,73));
-            gf.FillRectangle(&sBrush, gridClick.first - (dX - 1), gridClick.second - (2*dY - 1), dX - 1, dY - 1);
-            if(Goal.Drawn) {
-                gf.FillRectangle(&brBrush, Goal.X, Goal.Y, Goal.Width, Goal.Height);
+            if(strcmp(sqType, "Start") == 0) {
+                sqBrush.SetColor(Gdiplus::Color(80, 200, 120));
+                if(Start.Drawn == true) {
+                    gf->FillRectangle(&bgBrush, Start.X, Start.Y, dX - 1, dY - 1);            
+                }
+                Start.Drawn = true;
+                Start.X = x - (dX - 1);
+                Start.Y = y - (2*dY - 1);
             }
-       
-            Goal.Drawn = true;
-            Goal.X = gridClick.first - (dX - 1);
-            Goal.Y = gridClick.second - (2*dY - 1);
-            Goal.Width = dX - 1;
-            Goal.Height = dY - 1;            
-            ReleaseDC(hWnd, hdc);
+            else if(strcmp(sqType, "Goal") == 0) {
+                sqBrush.SetColor(Gdiplus::Color(204, 0, 0));
+                if(Goal.Drawn) {
+                    gf->FillRectangle(&bgBrush, Goal.X, Goal.Y, dX - 1, dY - 1);
+                }
+                Goal.Drawn = true;
+                Goal.X = x - (dX - 1);
+                Goal.Y = y - (2*dY - 1);
+            }
+            gf->FillRectangle(&sqBrush, x - (dX - 1), y - (2*dY - 1), dX - 1, dY - 1);
         }
 };
-
