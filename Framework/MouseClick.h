@@ -1,11 +1,10 @@
-#include "framework.h"
-
 class mouseClick {
     private:
         bool sClick = false;
         bool gClick = false;
         bool pClick = false;
         bool eClick = false;
+
     public:
         POINT umP;
         POINT dmP;
@@ -26,7 +25,7 @@ class mouseClick {
                 if(btn.btnActive){
                     switch(uI) {
                         case 0:
-                        //find path
+                        grid->Astar(hWnd);
                         break;
                         case 1:
                         sClick = true;
