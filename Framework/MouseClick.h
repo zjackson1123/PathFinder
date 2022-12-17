@@ -1,9 +1,56 @@
+#include "framework.h"
+
 class mouseClick {
     private:
-        bool sClick = false;
-        bool gClick = false;
-        bool pClick = false;
-        bool eClick = false;
+        static inline bool settingStart = false;
+        static inline bool settingGoal = false;
+        static inline bool drawingPath = false;
+        static inline bool erasingPath = false;
+
+        void btnClicked(const char* name, Buttons *btnarr) {
+            if(name == "start") {
+                if(settingStart) {settingStart = false;}
+                else{settingStart = true;}
+                settingGoal = false;
+                drawingPath = false;
+                erasingPath = false;
+                btnarr->stopDraw();
+                btnarr->stopErase();
+            }
+            else if(name == "goal") {
+                if(settingGoal) {settingGoal = false;}
+                else{settingGoal = true;}
+                settingStart = false;
+                drawingPath = false;
+                erasingPath = false;
+                btnarr->stopDraw();
+                btnarr->stopErase();
+            }
+            else if(name == "draw") {
+                if(drawingPath) {drawingPath = false;}
+                else{drawingPath = true;}
+                settingStart = false;
+                settingGoal = false;
+                erasingPath = false;
+                btnarr->toggleDraw();
+            }
+            else if(name == "erase") {
+                if(erasingPath) {erasingPath = false;}
+                else{erasingPath = true;}
+                settingStart = false;
+                settingGoal = false;
+                drawingPath = false;
+                btnarr->toggleErase();
+            }
+            else if(name == "clear") {
+                settingStart = false;
+                settingGoal = false;
+                drawingPath = false;
+                erasingPath = false;
+                btnarr->stopDraw();
+                btnarr->stopErase();
+            }
+        }
 
     public:
         POINT umP;
@@ -17,69 +64,60 @@ class mouseClick {
             GetCursorPos(&dmP);
         }
 
-        void checkClick(Buttons* btnArr, Grid* grid, HWND hWnd) {
+        void checkClick(Buttons *btnArr, Grid* grid, HWND hWnd) {
             int dI = btnArr->checkButtons(&dmP);
             int uI = btnArr->checkButtons(&umP);
             if(uI != -1 && uI == dI) { 
-                Button btn = btnArr->Buttons[uI];
+                
+                Button btn = btnArr->btnarr[uI];
                 if(btn.btnActive){
                     switch(uI) {
                         case 0:
-                        grid->Astar(hWnd);
+                        grid->Astar();
                         break;
                         case 1:
-                        sClick = true;
+                        btnClicked("start", btnArr);
                         break;
                         case 2:
-                        gClick = true;
+                        btnClicked("goal", btnArr);
                         break;
                         case 3:
-                        pClick = true;
-                        eClick = false;
-                        btnArr->disableBtn(btn, hWnd);
-                        btnArr->enableBtn(btnArr->Buttons[uI + 1], hWnd);
+                        btnClicked("draw", btnArr);
                         break;
                         case 4:
-                        pClick = false;           
-                        btnArr->disableBtn(btn, hWnd);
-                        btnArr->enableBtn(btnArr->Buttons[uI - 1], hWnd);
+                        btnClicked("erase", btnArr);
                         break;
                         case 5:
-                        eClick = true;
-                        pClick = false;
-                        btnArr->disableBtn(btn, hWnd);
-                        btnArr->enableBtn(btnArr->Buttons[uI + 1], hWnd);
+                        btnClicked("clear", btnArr);
+                        grid->clearGrid(grid);
                         break;
                         case 6:
-                        eClick = false;
-                        btnArr->disableBtn(btn, hWnd);
-                        btnArr->enableBtn(btnArr->Buttons[uI -1], hWnd);
+                        btnClicked("draw", btnArr);
                         break;
                         case 7:
-                        RECT rect = {0, 200, grid->width + grid->dX, grid->height + 200};
-                        InvalidateRect(hWnd, &rect, true);
+                        btnClicked("erase", btnArr);
                         break;
                     }
                 }
                 return;
             }
 
-            if(sClick) {
-                grid->legalClick(&dmP, &umP, hWnd, "Start");
-                sClick = false;
+            if(settingStart) {
+                grid->legalClick(&dmP, &umP, "Start");
+                settingStart = false;
             }
 
-            if(gClick) {
-                grid->legalClick(&dmP, &umP, hWnd, "Goal");
-                gClick = false;
+            if(settingGoal) {
+                grid->legalClick(&dmP, &umP, "Goal");
+                settingGoal = false;
             }
 
-            if(eClick) {
-                grid->legalClick(&dmP, &umP, hWnd, "Erase");
+            if(erasingPath) {
+                grid->legalClick(&dmP, &umP, "Erase");
             }
 
-            if(pClick) {
-                grid->legalClick(&dmP, &umP, hWnd);
+            if(drawingPath) {
+                grid->legalClick(&dmP, &umP);
             }                
         }
 };

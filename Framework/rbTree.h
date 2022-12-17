@@ -8,8 +8,6 @@ struct Node {
     int color;
 };
 
-
-
 typedef Node *NodePtr;
 
 class RBTree {

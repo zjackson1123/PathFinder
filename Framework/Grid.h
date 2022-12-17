@@ -28,8 +28,10 @@ inline bool operator < (const GS& left, const GS& right) {
 
 class Grid {
     private:
+        static inline HWND hWnd = NULL;
         GS Start;
         GS Goal; 
+        GS nullGS;
 
     public:
         int dX;
@@ -70,7 +72,18 @@ class Grid {
             }
         }
 
-        void legalClick(POINT* dmP, POINT* umP, HWND hWnd, const char* sqType = "") {
+        static void setHWND(HWND *hwnd) {
+            hWnd = *hwnd;
+        }
+
+        void clearGrid(Grid *grid) {
+            RECT rect = {0, 200, grid->width + grid->dX, grid->height + 200};
+            Grid::Start = nullGS;
+            Grid::Goal = nullGS;
+            InvalidateRect(hWnd, &rect, true);
+        }
+
+        void legalClick(POINT* dmP, POINT* umP, const char* sqType = "") {
             int x1 = bstX.searchTree(umP->x, Grid::dX);
             int y1 = bstY.searchTree(umP->y, Grid::dY);
             int x2 = bstX.searchTree(dmP->x, Grid::dX);
@@ -78,36 +91,40 @@ class Grid {
             if(x1 == 0 || x2 == 0) return;    
             HDC hdc = GetDC(hWnd);
             Gdiplus::Graphics gf(hdc);
-            
             if(x1 == x2 && y1 == y2) {     
-                drawGsquare(&gf, x1, y1, sqType);
+                drawGS(&gf, x1, y1, sqType);
                 ReleaseDC(hWnd, hdc);
                 return;
             }    
             while(x2 != x1 || y2 != y1) {
-                drawGsquare(&gf, x2, y2, sqType);
+                drawGS(&gf, x2, y2, sqType);
                 if(x2 > x1) x2 -= dX;
                 if(x1 > x2) x2 += dX;
                 if(y2 > y1) y2 -= dY;
                 if(y1 > y2) y2 += dY;
 
             }
-            drawGsquare(&gf, x1, y2, sqType);
+            drawGS(&gf, x1, y2, sqType);
             ReleaseDC(hWnd, hdc);
         }
 
-        void drawGsquare(Gdiplus::Graphics* gf, int x, int y, const char* sqType) {
-            Gdiplus::SolidBrush sqBrush(Gdiplus::Color(255, 255, 255));
+        void drawGS(Gdiplus::Graphics* gf, int x, int y, const char* sqType) {
+            Gdiplus::SolidBrush sqBrush(Gdiplus::Color(255, 255, 255)); 
             Gdiplus::SolidBrush bgBrush(Gdiplus::Color(66,69,73));
             if(strcmp(sqType, "Erase") == 0) {
+                HDC hdc = GetDC(hWnd);
+                COLORREF clr = GetPixel(hdc, (x + 1) - dX , (y + 1) - (2*dY));
+                if(clr == RGB(204, 0, 0)) {Grid::Goal = nullGS;} //if it's red
+                if(clr == RGB(80, 200, 120)) {Grid::Start = nullGS;} //if it's green
                 gf->FillRectangle(&bgBrush, x - (dX - 1), y - (2*dY - 1), dX - 1, dY - 1);
+                ReleaseDC(hWnd, hdc);
                 return;
             }
-            if(strcmp(sqType, "bPath") == 0) {
+            else if(strcmp(sqType, "bPath") == 0) {
                 sqBrush.SetColor(Gdiplus::Color(80, 200, 120));
                 gf->FillRectangle(&sqBrush, (x * dX) + 1, (y * dY) + 175, dX - 1, dY - 1);
             }
-            if(strcmp(sqType, "Start") == 0) {
+            else if(strcmp(sqType, "Start") == 0) {
                 sqBrush.SetColor(Gdiplus::Color(80, 200, 120));
                 if(Start.Drawn == true) {
                     gf->FillRectangle(&bgBrush, Start.X, Start.Y, dX - 1, dY - 1);            
@@ -128,12 +145,8 @@ class Grid {
             gf->FillRectangle(&sqBrush, x - (dX - 1), y - (2*dY - 1), dX - 1, dY - 1);
         }
 
-        bool IsValid(int x, int y, HDC dc) {
-            COLORREF clr = GetPixel(dc, (x * dX) + 37, (y * dY) + 199);
-            RGBTRIPLE rgb;  
-            rgb.rgbtRed = GetRValue(clr);;
-            rgb.rgbtGreen = GetGValue(clr);
-            rgb.rgbtBlue = GetBValue(clr);
+        bool IsValid(int x, int y, HDC *hdc) {
+            COLORREF clr = GetPixel(*hdc, (x * dX) + 37, (y * dY) + 199);
             COLORREF white = RGB(255, 255, 255);
             COLORREF red = RGB(204, 0, 0);
             if(x < 0 || y < 0 || x >= ROWS || y >= COLUMNS || (clr != white && clr != red)) {
@@ -155,41 +168,34 @@ class Grid {
             return (sqrt((x - destX)*(x - destX) + (y - destY)*(y - destY)));
         }
 
-        std::vector<GS> MakePath(HDC dc) {
+        void MakePath(HDC *hdc) {
             int x = (Goal.X + 1) / dX;
             int y = ((Goal.Y + (dY - 1)) - 200) / dY;
             std::stack<GS> path;
-            std::vector<GS> uPath;
-            Gdiplus::Graphics gf(dc);
+            Gdiplus::Graphics gf(*hdc);
             try {
                 while(!(GridMap[x][y].parentX == x && GridMap[x][y].parentY == y)
                 && GridMap[x][y].parentX != -1 && GridMap[x][y].parentY != -1) {
                     path.push(GridMap[x][y]);
-                    int pX = GridMap[x][y].parentX;
-                    int pY = GridMap[x][y].parentY;
-                    x = pX;
-                    y = pY;
+                    int parX = GridMap[x][y].parentX;
+                    int parY = GridMap[x][y].parentY;
+                    x = parX;
+                    y = parY;
                 }
                 path.push(GridMap[x][y]);
-
                 while(!path.empty()) {
                     GS top = path.top();
                     path.pop();
-                    uPath.emplace_back(top);
-                    drawGsquare(&gf, top.X, top.Y, "bPath");
+                    drawGS(&gf, top.X, top.Y, "bPath");
                 }
-                return uPath;
             }
             catch(...){
                 //exception
-                
             }
-            return uPath;
         }
 
 
-        std::vector<GS> Astar(HWND hWnd) {
-            
+        std::vector<GS> Astar() {      
             bool cList[ROWS][COLUMNS];
             for(int i = 0; i < ROWS; i++) {
                 for(int j = 0; j < COLUMNS; j++) {
@@ -198,8 +204,7 @@ class Grid {
                 }
             }
             int x = (Start.X + 1) / dX;
-            int a =  ((Start.Y + (dY - 1)) - 200);
-            int y = a/ dY;
+            int y = ((Start.Y + (dY - 1)) - 200) / dY;
             std::vector<GS> bestPath;
             GridMap[x][y].fCost = 0.0;
             GridMap[x][y].gCost = 0.0;
@@ -209,7 +214,7 @@ class Grid {
             bool foundDest = false;
             std::set<GS> oList;
             oList.emplace(GridMap[x][y]);
-            HDC dc = GetDC(hWnd);
+            HDC hdc = GetDC(hWnd);
             while(!oList.empty()) {
                 std::set<GS>::iterator it = oList.begin();
                 GS gs = *it;
@@ -220,13 +225,13 @@ class Grid {
                 for(int nX = -1; nX <= 1; nX++){
                     for(int nY = -1; nY <= 1; nY++){
                         double nG, nH, nF;
-                        if(IsValid(x + nX, y + nY, dc)){                   
+                        if(IsValid(x + nX, y + nY, &hdc)){                   
                             if(IsDest(x + nX, y + nY)){
                                 GridMap[x + nX][y + nY].parentX = x;
                                 GridMap[x + nX][y + nY].parentY = y;
                                 foundDest = true;                   
-                                 bestPath = MakePath(dc);
-                                ReleaseDC(hWnd, dc);
+                                MakePath(&hdc);
+                                ReleaseDC(hWnd, hdc);
                                 return bestPath;
                             }
                             else if (cList[x + nX][y + nY] != true){
@@ -248,7 +253,7 @@ class Grid {
                     }
                 }    
             }
-                ReleaseDC(hWnd, dc);
+                ReleaseDC(hWnd, hdc);
                 return bestPath;          
         }
 };

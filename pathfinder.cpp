@@ -16,7 +16,6 @@ int WINAPI WinMain(HINSTANCE currentInstance, HINSTANCE previousInstance, PSTR c
 	Gdiplus::GdiplusStartupInput gdiplusStartupInput;
 	ULONG_PTR gdiplusToken;
 	Gdiplus::GdiplusStartup(&gdiplusToken, &gdiplusStartupInput, nullptr);
-
     createWindow(); 
 	MSG msg{};
 	while (GetMessage(&msg, nullptr, 0, 0)) {
@@ -47,6 +46,8 @@ bool createWindow(){
     RegisterClassEx(&windowClass);
     hWnd = CreateWindowEx(dwExStyle, _T("Path Finder"), _T("Path Finder"), WS_OVERLAPPEDWINDOW, 
     CW_USEDEFAULT, 0, 1200, 1000, NULL, NULL, hInst, NULL);
+    Buttons::setHWND(&hWnd);
+    Grid::setHWND(&hWnd);
     ShowWindow(hWnd, SW_SHOWMAXIMIZED);
     UpdateWindow(hWnd);
     return true;
@@ -83,21 +84,5 @@ void drawUI(HDC hdc) {
     Gdiplus::Pen pen(Gdiplus::Color(114,137,218));
     Gdiplus::SolidBrush sBrush(Gdiplus::Color(114,137,218));
     grid = Grid(rect, &gf, &pen);
-    std::string spb = "Find Shortest Path";
-    std::string ssp = "Set Start Point";
-    std::string sgb = "Set Goal";
-    std::string dpb = "Draw Path";
-    std::string cgb = "Clear Grid";
-    std::string sdpb = "Stop Drawing";
-    std::string epb = "Erase Path";
-    std::string sepb = "Stop Erasing";
-    btnArr.addBtn(Button(&gf, 20, 20, 120, 20, &spb));
-    btnArr.addBtn(Button(&gf, 160, 20, 120, 20, &ssp));
-    btnArr.addBtn(Button(&gf, 300, 20, 120, 20, &sgb));
-    btnArr.addBtn(Button(&gf, 440, 20, 120, 20, &dpb));
-    btnArr.addBtn(Button(&gf, 440, 60, 120, 20, &sdpb, false));
-    btnArr.addBtn(Button(&gf, 580, 20, 120, 20, &epb));
-    btnArr.addBtn(Button(&gf, 580, 60, 120, 20, &sepb, false));
-    btnArr.addBtn(Button(&gf, 720, 20, 120, 20, &cgb));
-    
+    btnArr.initBtns();
 }
