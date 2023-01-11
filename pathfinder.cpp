@@ -3,8 +3,8 @@
 HWND hWnd;
 HINSTANCE hInst;
 RECT rect;
+mouseClick mouseclick;
 Buttons btnArr;
-mouseClick mClick;
 Grid grid;
 RBTree bstX;
 RBTree bstY;
@@ -64,11 +64,11 @@ LRESULT CALLBACK WindowProcessMessages(HWND hWnd, UINT msg, WPARAM param, LPARAM
             EndPaint(hWnd, &ps);
             return 0;
         case WM_LBUTTONDOWN:
-            mClick.set_mDown();
+            mouseclick.set_mDown();
             return 0;
         case WM_LBUTTONUP:
-            mClick.set_mUp();
-            mClick.checkClick(&btnArr, &grid, hWnd);
+            mouseclick.set_mUp();
+            mouseclick.checkClick(&hWnd);
             return 0;
         case WM_DESTROY:
             PostQuitMessage(0);
@@ -86,3 +86,5 @@ void drawUI(HDC hdc) {
     grid = Grid(rect, &gf, &pen);
     btnArr.initBtns();
 }
+
+

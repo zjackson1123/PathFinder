@@ -19,6 +19,6 @@
 #include <set>
 
 #include "rbTree.h"
-#include "Button.h"
 #include "Grid.h"
+#include "Button.h"
 #include "MouseClick.h"
